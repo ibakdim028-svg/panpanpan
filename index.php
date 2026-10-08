@@ -1,92 +1,53 @@
-<?php
-// index.php
-
-$hasil = null;
-
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-
-    $persediaan_awal = (float) ($_POST["persediaan_awal"] ?? 0);
-    $pembelian       = (float) ($_POST["pembelian"] ?? 0);
-    $ongkos_angkut   = (float) ($_POST["ongkos_angkut"] ?? 0);
-    $retur_pembelian = (float) ($_POST["retur_pembelian"] ?? 0);
-    $potongan        = (float) ($_POST["potongan"] ?? 0);
-    $persediaan_akhir = (float) ($_POST["persediaan_akhir"] ?? 0);
-
-    // Pembelian Bersih
-    $pembelian_bersih = $pembelian + $ongkos_angkut
-                      - $retur_pembelian - $potongan;
-
-    // Menghitung HPP
-    $hpp = $persediaan_awal + $pembelian_bersih
-         - $persediaan_akhir;
-
-    $hasil = [
-        "persediaan_awal" => $persediaan_awal,
-        "pembelian_bersih" => $pembelian_bersih,
-        "persediaan_akhir" => $persediaan_akhir,
-        "hpp" => $hpp
-    ];
-}
-
-// Format Rupiah
-function rupiah($angka) {
-    return "Rp " . number_format($angka, 0, ',', '.');
-}
-?>
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Kalkulator HPP Produk</title>
+    <title>Kalkulator HPP</title>
 
     <style>
         * {
             box-sizing: border-box;
-            font-family: Arial, sans-serif;
         }
 
         body {
             margin: 0;
-            background: #f3f4f6;
-            color: #333;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #dbeafe, #eff6ff);
+            min-height: 100vh;
+            padding: 30px 15px;
         }
 
         .container {
-            max-width: 700px;
-            margin: 40px auto;
-            padding: 20px;
-        }
-
-        .card {
+            max-width: 650px;
+            margin: auto;
             background: white;
-            border-radius: 15px;
             padding: 30px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            border-radius: 18px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
         }
 
         h1 {
             text-align: center;
-            margin-bottom: 10px;
             color: #2563eb;
+            margin-bottom: 5px;
         }
 
-        .subtitle {
+        .deskripsi {
             text-align: center;
             color: #666;
             margin-bottom: 30px;
         }
 
-        .form-group {
-            margin-bottom: 18px;
+        .input-group {
+            margin-bottom: 17px;
         }
 
         label {
             display: block;
             font-weight: bold;
             margin-bottom: 7px;
+            color: #333;
         }
 
         input {
@@ -104,12 +65,12 @@ function rupiah($angka) {
 
         button {
             width: 100%;
-            padding: 13px;
+            padding: 14px;
             border: none;
             border-radius: 8px;
             background: #2563eb;
             color: white;
-            font-size: 16px;
+            font-size: 17px;
             font-weight: bold;
             cursor: pointer;
             margin-top: 10px;
@@ -120,18 +81,19 @@ function rupiah($angka) {
         }
 
         .hasil {
+            display: none;
             margin-top: 30px;
-            padding: 20px;
             background: #eff6ff;
-            border-radius: 10px;
+            padding: 20px;
+            border-radius: 12px;
         }
 
         .hasil h2 {
-            margin-top: 0;
             color: #1d4ed8;
+            margin-top: 0;
         }
 
-        .hasil-row {
+        .baris {
             display: flex;
             justify-content: space-between;
             padding: 10px 0;
@@ -139,35 +101,31 @@ function rupiah($angka) {
         }
 
         .total {
-            margin-top: 15px;
-            padding: 15px;
+            margin-top: 18px;
+            padding: 17px;
             background: #2563eb;
             color: white;
-            border-radius: 8px;
+            border-radius: 10px;
             display: flex;
             justify-content: space-between;
-            font-size: 20px;
+            font-size: 21px;
             font-weight: bold;
         }
 
         .rumus {
-            margin-top: 25px;
+            margin-top: 20px;
             padding: 15px;
-            background: #f9fafb;
+            background: white;
             border-left: 4px solid #2563eb;
+            line-height: 1.6;
         }
 
         @media (max-width: 600px) {
             .container {
-                margin: 15px auto;
-                padding: 10px;
-            }
-
-            .card {
                 padding: 20px;
             }
 
-            .hasil-row,
+            .baris,
             .total {
                 flex-direction: column;
                 gap: 5px;
@@ -179,137 +137,135 @@ function rupiah($angka) {
 <body>
 
 <div class="container">
-    <div class="card">
 
-        <h1>Kalkulator HPP</h1>
-        <p class="subtitle">
-            Aplikasi Menghitung Harga Pokok Penjualan Produk
-        </p>
+    <h1>Kalkulator HPP</h1>
 
-        <form method="POST">
+    <p class="deskripsi">
+        Harga Pokok Penjualan Produk
+    </p>
 
-            <div class="form-group">
-                <label>Persediaan Awal</label>
-                <input
-                    type="number"
-                    name="persediaan_awal"
-                    placeholder="Contoh: 5000000"
-                    min="0"
-                    required
-                >
-            </div>
+    <div class="input-group">
+        <label>Persediaan Awal</label>
+        <input type="number" id="persediaanAwal" placeholder="Contoh: 5000000">
+    </div>
 
-            <div class="form-group">
-                <label>Pembelian</label>
-                <input
-                    type="number"
-                    name="pembelian"
-                    placeholder="Contoh: 10000000"
-                    min="0"
-                    required
-                >
-            </div>
+    <div class="input-group">
+        <label>Pembelian</label>
+        <input type="number" id="pembelian" placeholder="Contoh: 10000000">
+    </div>
 
-            <div class="form-group">
-                <label>Ongkos Angkut Pembelian</label>
-                <input
-                    type="number"
-                    name="ongkos_angkut"
-                    placeholder="Contoh: 500000"
-                    min="0"
-                    value="0"
-                >
-            </div>
+    <div class="input-group">
+        <label>Ongkos Angkut Pembelian</label>
+        <input type="number" id="ongkosAngkut" value="0">
+    </div>
 
-            <div class="form-group">
-                <label>Retur Pembelian</label>
-                <input
-                    type="number"
-                    name="retur_pembelian"
-                    placeholder="Contoh: 300000"
-                    min="0"
-                    value="0"
-                >
-            </div>
+    <div class="input-group">
+        <label>Retur Pembelian</label>
+        <input type="number" id="retur" value="0">
+    </div>
 
-            <div class="form-group">
-                <label>Potongan Pembelian</label>
-                <input
-                    type="number"
-                    name="potongan"
-                    placeholder="Contoh: 200000"
-                    min="0"
-                    value="0"
-                >
-            </div>
+    <div class="input-group">
+        <label>Potongan Pembelian</label>
+        <input type="number" id="potongan" value="0">
+    </div>
 
-            <div class="form-group">
-                <label>Persediaan Akhir</label>
-                <input
-                    type="number"
-                    name="persediaan_akhir"
-                    placeholder="Contoh: 4000000"
-                    min="0"
-                    required
-                >
-            </div>
+    <div class="input-group">
+        <label>Persediaan Akhir</label>
+        <input type="number" id="persediaanAkhir" placeholder="Contoh: 4000000">
+    </div>
 
-            <button type="submit">
-                Hitung HPP
-            </button>
+    <button onclick="hitungHPP()">HITUNG HPP</button>
 
-        </form>
+    <div class="hasil" id="hasil">
 
-        <?php if ($hasil !== null): ?>
+        <h2>Hasil Perhitungan</h2>
 
-        <div class="hasil">
+        <div class="baris">
+            <span>Persediaan Awal</span>
+            <strong id="hasilAwal"></strong>
+        </div>
 
-            <h2>Hasil Perhitungan</h2>
+        <div class="baris">
+            <span>Pembelian Bersih</span>
+            <strong id="hasilPembelian"></strong>
+        </div>
 
-            <div class="hasil-row">
-                <span>Persediaan Awal</span>
-                <strong>
-                    <?= rupiah($hasil["persediaan_awal"]) ?>
-                </strong>
-            </div>
+        <div class="baris">
+            <span>Persediaan Akhir</span>
+            <strong id="hasilAkhir"></strong>
+        </div>
 
-            <div class="hasil-row">
-                <span>Pembelian Bersih</span>
-                <strong>
-                    <?= rupiah($hasil["pembelian_bersih"]) ?>
-                </strong>
-            </div>
-
-            <div class="hasil-row">
-                <span>Persediaan Akhir</span>
-                <strong>
-                    <?= rupiah($hasil["persediaan_akhir"]) ?>
-                </strong>
-            </div>
-
-            <div class="total">
-                <span>HPP</span>
-                <span>
-                    <?= rupiah($hasil["hpp"]) ?>
-                </span>
-            </div>
-
+        <div class="total">
+            <span>HPP</span>
+            <span id="hasilHPP"></span>
         </div>
 
         <div class="rumus">
-            <strong>Rumus:</strong><br><br>
-
-            HPP = Persediaan Awal + Pembelian Bersih − Persediaan Akhir
+            <strong>Rumus:</strong><br>
+            HPP = Persediaan Awal + Pembelian Bersih
+            − Persediaan Akhir
             <br><br>
 
             Pembelian Bersih =
             Pembelian + Ongkos Angkut − Retur − Potongan
         </div>
 
-        <?php endif; ?>
-
     </div>
+
 </div>
+
+<script>
+function formatRupiah(angka) {
+    return "Rp " + angka.toLocaleString("id-ID");
+}
+
+function hitungHPP() {
+
+    let persediaanAwal =
+        Number(document.getElementById("persediaanAwal").value) || 0;
+
+    let pembelian =
+        Number(document.getElementById("pembelian").value) || 0;
+
+    let ongkosAngkut =
+        Number(document.getElementById("ongkosAngkut").value) || 0;
+
+    let retur =
+        Number(document.getElementById("retur").value) || 0;
+
+    let potongan =
+        Number(document.getElementById("potongan").value) || 0;
+
+    let persediaanAkhir =
+        Number(document.getElementById("persediaanAkhir").value) || 0;
+
+
+    // Menghitung pembelian bersih
+    let pembelianBersih =
+        pembelian + ongkosAngkut - retur - potongan;
+
+
+    // Menghitung HPP
+    let hpp =
+        persediaanAwal + pembelianBersih - persediaanAkhir;
+
+
+    // Menampilkan hasil
+    document.getElementById("hasilAwal").textContent =
+        formatRupiah(persediaanAwal);
+
+    document.getElementById("hasilPembelian").textContent =
+        formatRupiah(pembelianBersih);
+
+    document.getElementById("hasilAkhir").textContent =
+        formatRupiah(persediaanAkhir);
+
+    document.getElementById("hasilHPP").textContent =
+        formatRupiah(hpp);
+
+    document.getElementById("hasil").style.display = "block";
+}
+</script>
 
 </body>
 </html>
